@@ -56,8 +56,14 @@ class CovarianceCITest(ABC):
 class CovYrZsCITest(CovarianceCITest):
     def __init__(self, r, s, sigma_sq_X, sigma_sq_1, sigma_sq_2, N):
         super().__init__()
-        self.r = r
-        self.s = s
+        # The theoretical quantity formula assumes r < s
+        # Since covariance is symmetrical, swap r and s if r > s
+        if r > s:
+            self.r = s
+            self.s = r
+        else:
+            self.r = r
+            self.s = s
         self.sigma_sq_X = sigma_sq_X
         self.sigma_sq_1 = sigma_sq_1
         self.sigma_sq_2 = sigma_sq_2
@@ -86,8 +92,14 @@ class CovYrZsCITest(CovarianceCITest):
 class CovXIrXJsCITest(CovarianceCITest):
     def __init__(self, r, s, sigma_sq_X, sigma_sq_1, sigma_sq_2, N):
         super().__init__()
-        self.r = r
-        self.s = s
+        # The theoretical quantity formula assumes r < s
+        # Since covariance is symmetrical, swap r and s if r > s
+        if r > s:
+            self.r = s
+            self.s = r
+        else:
+            self.r = r
+            self.s = s
         self.sigma_sq_X = sigma_sq_X
         self.sigma_sq_1 = sigma_sq_1
         self.sigma_sq_2 = sigma_sq_2
@@ -123,8 +135,14 @@ class CovXIrXJsCITest(CovarianceCITest):
 class CovYrYsCITest(CovarianceCITest):
     def __init__(self, r, s, N, sigma_sq_X, **kwargs):
         super().__init__()
-        self.r = r
-        self.s = s
+        # The theoretical quantity formula assumes r < s
+        # Since covariance is symmetrical, swap r and s if r > s
+        if r > s:
+            self.r = s
+            self.s = r
+        else:
+            self.r = r
+            self.s = s
         self.sigma_sq_X = sigma_sq_X
         self.sigma_sq_1 = None
         self.sigma_sq_2 = None
@@ -169,8 +187,14 @@ class CovYrYsCITest(CovarianceCITest):
 class CovYrYsSecondOrderCITest(CovarianceCITest):
     def __init__(self, r, s, N, sigma_sq_X, **kwargs):
         super().__init__()
-        self.r = r
-        self.s = s
+        # The theoretical quantity formula assumes r < s
+        # Since covariance is symmetrical, swap r and s if r > s
+        if r > s:
+            self.r = s
+            self.s = r
+        else:
+            self.r = r
+            self.s = s
         self.sigma_sq_X = sigma_sq_X
         self.sigma_sq_1 = None
         self.sigma_sq_2 = None
@@ -237,31 +261,26 @@ class CovV1V2CITest(CovarianceCITest):
         self.N = N
         self.M = M
 
-    def _cov_XIr_XJs_theoretical_quantity(self, r, s) -> float:
-        return(
-            1 / self.N *
-            self.sigma_sq_X * self.sigma_sq_1 * self.sigma_sq_2 /
-            (self.sigma_sq_X * self.sigma_sq_1 +
-             self.sigma_sq_X * self.sigma_sq_2 +
-             self.sigma_sq_1 * self.sigma_sq_2) +
-
-            (self.N - 1) / self.N *
-            self.sigma_sq_X ** 4 /
-            ((self.sigma_sq_X + self.sigma_sq_1) ** 1.5 *
-             (self.sigma_sq_X + self.sigma_sq_2) ** 1.5) *
-            r * (self.N - s + 1) /
-            ((self.N + 1) ** 2 * (self.N + 2)) /
-            (norm.pdf(norm.ppf(r / (self.N + 1))) *
-             norm.pdf(norm.ppf(s / (self.N + 1))))
-        )
-
     def theoretical_quantity(self) -> float:
-        acc = 0
+        acc = 0.0
         for r in range(self.N - self.M + 1, self.N + 1):
-            for s in range(self.N - self.M + 1, self.N + 1):
-                acc += (self._cov_XIr_XJs_theoretical_quantity(r, s))
+            acc += r * (self.N - r + 1) / norm.pdf(norm.ppf(r / (self.N + 1))) ** 2
+            for s in range(r + 1, self.N + 1):
+                acc += (2.0 * r * (self.N - s + 1) / norm.pdf(norm.ppf(r / (self.N + 1))) /
+                        norm.pdf(norm.ppf(s / (self.N + 1))))
 
-        return acc / self.M ** 2
+        acc *= (1.0 / self.M ** 2 * (self.N - 1) / self.N *
+                self.sigma_sq_X ** 2 /
+                (self.sigma_sq_X + self.sigma_sq_1) ** 1.5 /
+                (self.sigma_sq_X + self.sigma_sq_2) ** 1.5 /
+                (self.N + 1) ** 2 / (self.N + 2))
+
+        acc += (1.0 / self.N * (self.sigma_sq_X * self.sigma_sq_1 * self.sigma_sq_2) /
+                (self.sigma_sq_X * self.sigma_sq_1 +
+                self.sigma_sq_X * self.sigma_sq_2 +
+                self.sigma_sq_1 * self.sigma_sq_2))
+
+        return acc
 
     def add_sample(self, samples: Dict[str, List[float]]) -> None:
         self.samples.append(
