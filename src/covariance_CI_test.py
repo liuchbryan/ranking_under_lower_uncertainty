@@ -36,7 +36,7 @@ class CovarianceCITest(ABC):
         sample_CI_low, sample_CI_high = self.get_sample_CI()
 
         return (
-            (theoretical_quantity > sample_CI_low) and
+            (theoretical_quantity >= sample_CI_low) and
             (theoretical_quantity < sample_CI_high)
         )
 
@@ -44,7 +44,7 @@ class CovarianceCITest(ABC):
         theoretical_quantity = self.theoretical_quantity()
         _, sample_CI_high = self.get_sample_CI()
 
-        return theoretical_quantity > sample_CI_high
+        return theoretical_quantity >= sample_CI_high
 
     def theoretical_quantity_below_sample_CI(self) -> bool:
         theoretical_quantity = self.theoretical_quantity()
@@ -56,28 +56,31 @@ class CovarianceCITest(ABC):
 class CovYrZsCITest(CovarianceCITest):
     def __init__(self, r, s, sigma_sq_X, sigma_sq_1, sigma_sq_2, N):
         super().__init__()
-        # The theoretical quantity formula assumes r < s
-        # Since covariance is symmetrical, swap r and s if r > s
-        if r > s:
-            self.r = s
-            self.s = r
-        else:
-            self.r = r
-            self.s = s
+        self.r = r
+        self.s = s
         self.sigma_sq_X = sigma_sq_X
         self.sigma_sq_1 = sigma_sq_1
         self.sigma_sq_2 = sigma_sq_2
         self.N = N
 
     def theoretical_quantity(self) -> float:
+        # The theoretical quantity formula assumes r < s
+        # Since covariance is symmetrical, swap r and s if r > s
+        if self.r > self.s:
+            r = self.s
+            s = self.r
+        else:
+            r = self.r
+            s = self.s
+
         return (
             self.sigma_sq_X ** 2 /
             (np.sqrt(self.sigma_sq_X + self.sigma_sq_1) *
              np.sqrt(self.sigma_sq_X + self.sigma_sq_2)) *
-            self.r * (self.N - self.s + 1) /
+            r * (self.N - s + 1) /
             ((self.N + 1) ** 2 * (self.N + 2)) /
-            (norm.pdf(norm.ppf(self.r / (self.N + 1))) *
-             norm.pdf(norm.ppf(self.s / (self.N + 1))))
+            (norm.pdf(norm.ppf(r / (self.N + 1))) *
+             norm.pdf(norm.ppf(s / (self.N + 1))))
         )
 
     def add_sample(self, samples: Dict[str, List[float]]) -> None:
@@ -89,23 +92,77 @@ class CovYrZsCITest(CovarianceCITest):
         return "Cov(Y_(r), Z_(s))"
 
 
-class CovXIrXJsCITest(CovarianceCITest):
+class CovYrZsSecondOrderCITest(CovarianceCITest):
     def __init__(self, r, s, sigma_sq_X, sigma_sq_1, sigma_sq_2, N):
         super().__init__()
-        # The theoretical quantity formula assumes r < s
-        # Since covariance is symmetrical, swap r and s if r > s
-        if r > s:
-            self.r = s
-            self.s = r
-        else:
-            self.r = r
-            self.s = s
+        self.r = r
+        self.s = s
         self.sigma_sq_X = sigma_sq_X
         self.sigma_sq_1 = sigma_sq_1
         self.sigma_sq_2 = sigma_sq_2
         self.N = N
 
     def theoretical_quantity(self) -> float:
+        # The theoretical quantity formula assumes r < s
+        # Since covariance is symmetrical, swap r and s if r > s
+        if self.r > self.s:
+            r = self.s
+            s = self.r
+        else:
+            r = self.r
+            s = self.s
+
+        # Clear up the rest of the notations
+        p = lambda r: r / (self.N + 1)
+        q = lambda r: (self.N - r + 1) / (self.N + 1)
+        Q = lambda r: norm.ppf(p(r))
+        Qp = lambda r: 1 / (norm.pdf(Q(r)))
+        Qpp = lambda r: Q(r) / (norm.pdf(Q(r))) ** 2
+        Qppp = lambda r: (1 + 2 * Q(r) ** 2) / (norm.pdf(Q(r))) ** 3
+
+        return (
+            self.sigma_sq_X ** 2 /
+            (np.sqrt(self.sigma_sq_X + self.sigma_sq_1) *
+             np.sqrt(self.sigma_sq_X + self.sigma_sq_2)) *
+            (p(r) * q(s) / (self.N + 2) * Qp(r) * Qp(s) +
+             p(r) * q(s) / (self.N + 2) ** 2 * (
+                     (q(r) - p(r)) * Qpp(r) * Qp(s) +
+                     (q(s) - p(s)) * Qp(r) * Qpp(s) +
+                     1.0 / 2 * p(r) * q(r) * Qppp(r) * Qp(s) +
+                     1.0 / 2 * p(s) * q(s) * Qp(r) * Qppp(s) +
+                     1.0 / 2 * p(r) * q(s) * Qpp(r) * Qpp(s)
+             ))
+        )
+
+    def add_sample(self, samples: Dict[str, List[float]]) -> None:
+        self.samples.append(
+            np.cov(samples['noisy_rth_observed'],
+                   samples['clean_sth_observed'])[0][1])
+
+    def get_test_name(self) -> str:
+        return "Cov(Y_(r), Z_(s)) - second order"
+
+
+class CovXIrXJsCITest(CovarianceCITest):
+    def __init__(self, r, s, sigma_sq_X, sigma_sq_1, sigma_sq_2, N):
+        super().__init__()
+        self.r = r
+        self.s = s
+        self.sigma_sq_X = sigma_sq_X
+        self.sigma_sq_1 = sigma_sq_1
+        self.sigma_sq_2 = sigma_sq_2
+        self.N = N
+
+    def theoretical_quantity(self) -> float:
+        # The theoretical quantity formula assumes r < s
+        # Since covariance is symmetrical, swap r and s if r > s
+        if self.r > self.s:
+            r = self.s
+            s = self.r
+        else:
+            r = self.r
+            s = self.s
+
         return (
             1 / self.N *
             self.sigma_sq_X * self.sigma_sq_1 * self.sigma_sq_2 /
@@ -117,10 +174,10 @@ class CovXIrXJsCITest(CovarianceCITest):
             self.sigma_sq_X ** 4 /
             ((self.sigma_sq_X + self.sigma_sq_1) ** 1.5 *
              (self.sigma_sq_X + self.sigma_sq_2) ** 1.5) *
-            self.r * (self.N - self.s + 1) /
+            r * (self.N - s + 1) /
             ((self.N + 1) ** 2 * (self.N + 2)) /
-            (norm.pdf(norm.ppf(self.r / (self.N + 1))) *
-             norm.pdf(norm.ppf(self.s / (self.N + 1))))
+            (norm.pdf(norm.ppf(r / (self.N + 1))) *
+             norm.pdf(norm.ppf(s / (self.N + 1))))
         )
 
     def add_sample(self, samples: Dict[str, List[float]]) -> None:
@@ -135,14 +192,8 @@ class CovXIrXJsCITest(CovarianceCITest):
 class CovYrYsCITest(CovarianceCITest):
     def __init__(self, r, s, N, sigma_sq_X, **kwargs):
         super().__init__()
-        # The theoretical quantity formula assumes r < s
-        # Since covariance is symmetrical, swap r and s if r > s
-        if r > s:
-            self.r = s
-            self.s = r
-        else:
-            self.r = r
-            self.s = s
+        self.r = r
+        self.s = s
         self.sigma_sq_X = sigma_sq_X
         self.sigma_sq_1 = None
         self.sigma_sq_2 = None
@@ -162,12 +213,21 @@ class CovYrYsCITest(CovarianceCITest):
         else:
             sigma_sq_eps = self.sigma_sq_2
 
+        # The theoretical quantity formula assumes r < s
+        # Since covariance is symmetrical, swap r and s if r > s
+        if self.r > self.s:
+            r = self.s
+            s = self.r
+        else:
+            r = self.r
+            s = self.s
+
         return(
-            self.r * (self.N - self.s + 1) /
+            r * (self.N - s + 1) /
             ((self.N + 1) ** 2 * (self.N + 2)) *
             (self.sigma_sq_X + sigma_sq_eps) /
-            (norm.pdf(norm.ppf(self.r / (self.N + 1))) *
-             norm.pdf(norm.ppf(self.s / (self.N + 1))))
+            (norm.pdf(norm.ppf(r / (self.N + 1))) *
+             norm.pdf(norm.ppf(s / (self.N + 1))))
         )
 
     def add_sample(self, samples: Dict[str, List[float]]) -> None:
@@ -187,14 +247,8 @@ class CovYrYsCITest(CovarianceCITest):
 class CovYrYsSecondOrderCITest(CovarianceCITest):
     def __init__(self, r, s, N, sigma_sq_X, **kwargs):
         super().__init__()
-        # The theoretical quantity formula assumes r < s
-        # Since covariance is symmetrical, swap r and s if r > s
-        if r > s:
-            self.r = s
-            self.s = r
-        else:
-            self.r = r
-            self.s = s
+        self.r = r
+        self.s = s
         self.sigma_sq_X = sigma_sq_X
         self.sigma_sq_1 = None
         self.sigma_sq_2 = None
@@ -214,9 +268,16 @@ class CovYrYsSecondOrderCITest(CovarianceCITest):
         else:
             sigma_sq_eps = self.sigma_sq_2
 
-        # Clear up the notations
-        r = self.r
-        s = self.s
+        # The theoretical quantity formula assumes r < s
+        # Since covariance is symmetrical, swap r and s if r > s
+        if self.r > self.s:
+            r = self.s
+            s = self.r
+        else:
+            r = self.r
+            s = self.s
+
+        # Clear up the rest of the notations
         p = lambda r: r / (self.N + 1)
         q = lambda r: (self.N - r + 1) / (self.N + 1)
         Q = lambda r: norm.ppf(p(r))
