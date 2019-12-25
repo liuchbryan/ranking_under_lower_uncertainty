@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Dict
 
+
 def get_test_params() -> Dict[str, float]:
     """
     Randomly generate a set of parameters from a realistic param space
@@ -12,7 +13,7 @@ def get_test_params() -> Dict[str, float]:
         'sigma_sq_X': np.random.uniform(0.3, 10) ** 2,
         'sigma_sq_1': np.random.uniform(0.3, 10) ** 2
     }
-    params['M'] = max(int(params['N'] * np.random.uniform(0.01, 0.8)), 1)
+    params['M'] = int(max(params['N'] * np.random.uniform(0.01, 0.8), 1))
     params['sigma_sq_2'] = (
         max((np.sqrt(params['sigma_sq_1']) * np.random.uniform(0.1, 0.99)) ** 2,
             0.2 ** 2))
