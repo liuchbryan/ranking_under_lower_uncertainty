@@ -1,12 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Tuple, Optional
+import pickle
+import time
 
 import numpy as np
 from scipy.stats import percentileofscore, norm
-
-
-def _print_nothing_in_initial_sample(test_name: str) -> None:
-    print("There is nothing in the initial samples for {}.".format(test_name))
 
 
 class BootstrapCITest(ABC):
@@ -248,3 +246,47 @@ class VarDCITest(BootstrapCITest):
 
     def theoretical_quantity(self) -> float:
         return 0
+
+
+def _print_nothing_in_initial_sample(test_name: str) -> None:
+    print("There is nothing in the initial samples for {}.".format(test_name))
+
+
+def print_test_collection_result(test_collection: List[BootstrapCITest]) -> None:
+    if test_collection is None or len(test_collection) == 0:
+        print("There is nothing in the provided test collection.")
+        return
+
+    # It usually takes a long time to calculate the theoretical quantity,
+    # which will benefit from a progress bar
+    within_CI = []
+    for index, test in enumerate(test_collection, start=1):
+        print("Calculating theoretical quantity / sample CI for test {}/{}..."
+              .format(index, len(test_collection)),
+              end="\r")
+
+        within_CI.append(test.theoretical_quantity_in_sample_CI())
+
+    print(test_collection[0].test_name() +
+          ": {}/{} ({}%) "
+          .format(np.sum(within_CI), len(within_CI),
+                  np.round(100.0 * np.sum(within_CI) / len(within_CI), 2)) +
+          "of the tests have the theoretical quantity within the CI.")
+
+
+def save_test_collection(test_collection: List[BootstrapCITest], in_dir: str = './output/') -> None:
+    """
+    Save given `test_collection` as a pickle file in `in_dir`
+    :param test_collection: List of tests
+    :param in_dir: Output directory
+    :return: None
+    """
+    if test_collection is None or len(test_collection) == 0:
+        return
+
+    file_name = (in_dir + str(test_collection[0].__class__.__name__) +
+                 "_" + str(int(time.time())) + ".pickle")
+    pickle_file = open(file_name, 'wb')
+    pickle.dump(test_collection, pickle_file)
+
+    print("The test collection is saved at " + file_name)
