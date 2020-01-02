@@ -1,13 +1,12 @@
 import argparse
-
 from rulu.bootstrap_CI_test import *
 from rulu.normal_normal_model import get_samples
 from rulu.utils import get_test_params
 
 # Argument parser work
 script_description = \
-    "Run multiple statistical tests to confirm the theoretical variance / covariance of V, V1/V2 and D " \
-    "using bootstrap samples"
+    "Run multiple statistical tests to confirm the theoretical variance of V and D, and theoretical " \
+    "covariance between V1 and V2 using bootstrap samples."
 parser = argparse.ArgumentParser(description=script_description)
 parser.add_argument("--num_tests", default=10, type=int,
                     help="Number of statistical tests to be run")
@@ -103,4 +102,4 @@ for bootstrap_test_collection in bootstrap_test_collections:
         print_test_collection_result(bootstrap_test_collection)
     except KeyboardInterrupt:
         print("{}: Skipped.".format(bootstrap_test_collection[0].test_name()))
-    save_test_collection(bootstrap_test_collection)
+    save_test_collection(bootstrap_test_collection, in_dir="./output")

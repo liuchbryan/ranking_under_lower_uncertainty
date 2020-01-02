@@ -31,7 +31,6 @@ def find_all_tests_in_same_category(test, in_dir='../output'):
     """
     Retrieve all tests in `in_dir` that is of the same type as the specified `test`
     """
-
     def get_tests_from_pickle_file(file_path):
         filehandler = open(file_path, 'rb')
         return pickle.load(filehandler)

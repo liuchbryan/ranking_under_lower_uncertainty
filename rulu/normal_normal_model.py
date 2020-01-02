@@ -115,7 +115,7 @@ def get_samples(
         improvement.append(clean_chosen_true_mean - noisy_chosen_true_mean)
 
         # Reporting and progress tracking - print results of 20 samples
-        if (verbose == True) and (i % int(n_samples / 20) == 0):
+        if (verbose == True) and (i % max(int(n_samples / 20), 1) == 0):
             print("Sample {}/{}: Noisy mean: {}, Clean mean: {}. Improvement: {} ({}%)    "
                   .format(i, n_samples,
                           np.round(noisy_chosen_true_mean, 4),

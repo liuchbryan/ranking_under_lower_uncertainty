@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 import numpy as np
 from scipy.stats import norm, percentileofscore
+import pickle
+import time
 
 
 class CovarianceCITest(ABC):
@@ -52,7 +54,7 @@ class CovarianceCITest(ABC):
 
         return theoretical_quantity < sample_CI_low
 
-    def theoretical_quantity_sample_percentile(self) -> float:
+    def theoretical_quantity_sample_percentile(self) -> Optional[float]:
         if len(self.samples) == 0:
             return None
         return percentileofscore(self.samples, self.theoretical_quantity())
@@ -419,3 +421,36 @@ class CovV1V2CITest(CovarianceCITest):
 
     def get_test_name(self) -> str:
         return "Cov(V1, V2)"
+
+
+def print_test_collection_result(test_collection: List[CovarianceCITest]) -> None:
+    if test_collection is None or len(test_collection) == 0:
+        print("There is nothing in the provided test collection.")
+        return
+
+    within_CI = [test.theoretical_quantity_in_sample_CI()
+                 for test in test_collection]
+
+    print(test_collection[0].get_test_name() +
+          ": {}/{} ({}%) "
+          .format(np.sum(within_CI), len(within_CI),
+                  np.round(100.0 * np.sum(within_CI) / len(within_CI), 2)) +
+          "of the tests have the theoretical quantity within the CI.")
+
+
+def save_test_collection(test_collection: List[CovarianceCITest], in_dir: str = '../output/') -> None:
+    """
+    Save given `test_collection` as a pickle file in `in_dir`
+    :param test_collection: List of tests
+    :param in_dir: Output directory
+    :return: None
+    """
+    if test_collection is None or len(test_collection) == 0:
+        return
+
+    file_name = (in_dir + str(test_collection[0].__class__.__name__) +
+                 "_" + str(int(time.time())) + ".pickle")
+    pickle_file = open(file_name, 'wb')
+    pickle.dump(test_collection, pickle_file)
+
+    print("The test collection is saved at " + file_name)

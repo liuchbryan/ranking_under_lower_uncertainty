@@ -274,7 +274,7 @@ def print_test_collection_result(test_collection: List[BootstrapCITest]) -> None
           "of the tests have the theoretical quantity within the CI.")
 
 
-def save_test_collection(test_collection: List[BootstrapCITest], in_dir: str = './output/') -> None:
+def save_test_collection(test_collection: List[BootstrapCITest], in_dir: str = '../output/') -> None:
     """
     Save given `test_collection` as a pickle file in `in_dir`
     :param test_collection: List of tests

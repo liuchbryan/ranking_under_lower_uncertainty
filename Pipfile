@@ -9,8 +9,10 @@ pandas = "*"
 matplotlib = "*"
 scipy = "*"
 jupyter = "*"
+pytest = "*"
 
 [packages]
+pytest = "*"
 
 [requires]
 python_version = "3.7"
