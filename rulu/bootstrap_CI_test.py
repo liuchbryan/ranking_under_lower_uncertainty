@@ -6,6 +6,8 @@ import time
 import numpy as np
 from scipy.stats import percentileofscore, norm
 
+from rulu.normal_normal_model import var_XIr, cov_XIr_XIs
+
 
 class BootstrapCITest(ABC):
     CI_PERCENTILE_LOW = 2.5
@@ -65,38 +67,6 @@ class BootstrapCITest(ABC):
         return percentileofscore(self.bootstrap_samples, self.theoretical_quantity())
 
 
-def _var_XIr(r, sigma_sq_X, sigma_sq_eps, N, **kwargs):
-    return (
-            (sigma_sq_eps * sigma_sq_X /
-             (sigma_sq_X + sigma_sq_eps)) +
-            sigma_sq_X ** 2 /
-            (sigma_sq_X + sigma_sq_eps) *
-            (r * (N - r + 1)) /
-            ((N + 1) ** 2 * (N + 2)) /
-            (norm.pdf(norm.ppf(r / (N + 1)))) ** 2
-    )
-
-
-def _cov_XIr_XIs(r, s, sigma_sq_X, sigma_sq_eps, N, **kwargs):
-    if r == s:
-        return _var_XIr(r, sigma_sq_X, sigma_sq_eps, N, **kwargs)
-
-    # The formula assumes r < s, though if the input
-    # r is larger than s, then we just need to swap them
-    # as covariance function is symmetric.
-    r_act = (r if r < s else s)
-    s_act = (s if r < s else r)
-
-    return (
-            sigma_sq_X ** 2 /
-            (sigma_sq_X + sigma_sq_eps) *
-            (r_act * (N - s_act + 1)) /
-            ((N + 1) ** 2 * (N + 2)) /
-            norm.pdf(norm.ppf(r_act / (N + 1))) /
-            norm.pdf(norm.ppf(s_act / (N + 1)))
-    )
-
-
 class VarVCITest(BootstrapCITest):
     def __init__(self, sigma_sq_X: float = 1, N: int = 100, M: int = 25, **kwargs):
         super(VarVCITest, self).__init__()
@@ -146,9 +116,9 @@ class VarVCITest(BootstrapCITest):
 
         acc = 0.0
         for r in range(self.N - self.M + 1, self.N + 1):
-            acc += _var_XIr(r, self.sigma_sq_X, sigma_sq_eps, self.N)
+            acc += var_XIr(r, self.sigma_sq_X, sigma_sq_eps, self.N)
             for s in range(r + 1, self.N + 1):
-                acc += 2.0 * _cov_XIr_XIs(r, s, self.sigma_sq_X, sigma_sq_eps, self.N)
+                acc += 2.0 * cov_XIr_XIs(r, s, self.sigma_sq_X, sigma_sq_eps, self.N)
 
         acc = acc / (self.M ** 2)
 

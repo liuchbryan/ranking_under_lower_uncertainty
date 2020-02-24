@@ -42,3 +42,10 @@ def find_all_tests_in_same_category(test, in_dir='../output'):
 
     return [test for tests in map(get_tests_from_pickle_file, tests_pickle_fps)
             for test in tests]
+
+
+def fit_beta_distribution_params(mu, sigma_sq):
+    alpha = ((1 - mu) / sigma_sq - (1 / mu)) * mu ** 2
+    beta = alpha * (1 / mu - 1)
+
+    return alpha, beta

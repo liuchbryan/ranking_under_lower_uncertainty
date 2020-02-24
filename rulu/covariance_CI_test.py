@@ -5,6 +5,8 @@ from scipy.stats import norm, percentileofscore
 import pickle
 import time
 
+from rulu.normal_normal_model import cov_Yr_Zs, cov_XIr_XJs, cov_Yr_Zs_second_order, cov_XIr_XJs_second_order
+
 
 class CovarianceCITest(ABC):
     CI_PERCENTILE_LOW = 2.5
@@ -80,15 +82,8 @@ class CovYrZsCITest(CovarianceCITest):
             r = self.r
             s = self.s
 
-        return (
-            self.sigma_sq_X ** 2 /
-            (np.sqrt(self.sigma_sq_X + self.sigma_sq_1) *
-             np.sqrt(self.sigma_sq_X + self.sigma_sq_2)) *
-            r * (self.N - s + 1) /
-            ((self.N + 1) ** 2 * (self.N + 2)) /
-            (norm.pdf(norm.ppf(r / (self.N + 1))) *
-             norm.pdf(norm.ppf(s / (self.N + 1))))
-        )
+        return (cov_Yr_Zs(r=r, s=s, sigma_sq_X=self.sigma_sq_X,
+                          sigma_sq_1=self.sigma_sq_1, sigma_sq_2=self.sigma_sq_2, N=self.N))
 
     def add_sample(self, samples: Dict[str, List[float]]) -> None:
         self.samples.append(
@@ -119,27 +114,8 @@ class CovYrZsSecondOrderCITest(CovarianceCITest):
             r = self.r
             s = self.s
 
-        # Clear up the rest of the notations
-        p = lambda r: r / (self.N + 1)
-        q = lambda r: (self.N - r + 1) / (self.N + 1)
-        Q = lambda r: norm.ppf(p(r))
-        Qp = lambda r: 1 / (norm.pdf(Q(r)))
-        Qpp = lambda r: Q(r) / (norm.pdf(Q(r))) ** 2
-        Qppp = lambda r: (1 + 2 * Q(r) ** 2) / (norm.pdf(Q(r))) ** 3
-
-        return (
-            self.sigma_sq_X ** 2 /
-            (np.sqrt(self.sigma_sq_X + self.sigma_sq_1) *
-             np.sqrt(self.sigma_sq_X + self.sigma_sq_2)) *
-            (p(r) * q(s) / (self.N + 2) * Qp(r) * Qp(s) +
-             p(r) * q(s) / (self.N + 2) ** 2 * (
-                     (q(r) - p(r)) * Qpp(r) * Qp(s) +
-                     (q(s) - p(s)) * Qp(r) * Qpp(s) +
-                     1.0 / 2 * p(r) * q(r) * Qppp(r) * Qp(s) +
-                     1.0 / 2 * p(s) * q(s) * Qp(r) * Qppp(s) +
-                     1.0 / 2 * p(r) * q(s) * Qpp(r) * Qpp(s)
-             ))
-        )
+        return (cov_Yr_Zs_second_order(r=r, s=s, sigma_sq_X=self.sigma_sq_X, sigma_sq_1=self.sigma_sq_1,
+                                       sigma_sq_2=self.sigma_sq_2, N=self.N))
 
     def add_sample(self, samples: Dict[str, List[float]]) -> None:
         self.samples.append(
@@ -170,22 +146,8 @@ class CovXIrXJsCITest(CovarianceCITest):
             r = self.r
             s = self.s
 
-        return (
-            1 / self.N *
-            self.sigma_sq_X * self.sigma_sq_1 * self.sigma_sq_2 /
-            (self.sigma_sq_X * self.sigma_sq_1 +
-             self.sigma_sq_X * self.sigma_sq_2 +
-             self.sigma_sq_1 * self.sigma_sq_2) +
-
-            (self.N - 1) / self.N *
-            self.sigma_sq_X ** 4 /
-            ((self.sigma_sq_X + self.sigma_sq_1) ** 1.5 *
-             (self.sigma_sq_X + self.sigma_sq_2) ** 1.5) *
-            r * (self.N - s + 1) /
-            ((self.N + 1) ** 2 * (self.N + 2)) /
-            (norm.pdf(norm.ppf(r / (self.N + 1))) *
-             norm.pdf(norm.ppf(s / (self.N + 1))))
-        )
+        return cov_XIr_XJs(r=r, s=s, sigma_sq_X=self.sigma_sq_X,
+                           sigma_sq_1=self.sigma_sq_1, sigma_sq_2=self.sigma_sq_2, N=self.N)
 
     def add_sample(self, samples: Dict[str, List[float]]) -> None:
         self.samples.append(
@@ -216,34 +178,8 @@ class CovXIrXJsSecondOrderCITest(CovarianceCITest):
             r = self.r
             s = self.s
 
-        # Clear up the rest of the notations
-        p = lambda r: r / (self.N + 1)
-        q = lambda r: (self.N - r + 1) / (self.N + 1)
-        Q = lambda r: norm.ppf(p(r))
-        Qp = lambda r: 1 / (norm.pdf(Q(r)))
-        Qpp = lambda r: Q(r) / (norm.pdf(Q(r))) ** 2
-        Qppp = lambda r: (1 + 2 * Q(r) ** 2) / (norm.pdf(Q(r))) ** 3
-
-        return (
-            1 / self.N *
-            self.sigma_sq_X * self.sigma_sq_1 * self.sigma_sq_2 /
-            (self.sigma_sq_X * self.sigma_sq_1 +
-             self.sigma_sq_X * self.sigma_sq_2 +
-             self.sigma_sq_1 * self.sigma_sq_2) +
-
-            (self.N - 1) / self.N *
-            self.sigma_sq_X ** 4 /
-            ((self.sigma_sq_X + self.sigma_sq_1) ** 1.5 *
-             (self.sigma_sq_X + self.sigma_sq_2) ** 1.5) *
-            (p(r) * q(s) / (self.N + 2) * Qp(r) * Qp(s) +
-             p(r) * q(s) / (self.N + 2) ** 2 * (
-                     (q(r) - p(r)) * Qpp(r) * Qp(s) +
-                     (q(s) - p(s)) * Qp(r) * Qpp(s) +
-                     1.0 / 2 * p(r) * q(r) * Qppp(r) * Qp(s) +
-                     1.0 / 2 * p(s) * q(s) * Qp(r) * Qppp(s) +
-                     1.0 / 2 * p(r) * q(s) * Qpp(r) * Qpp(s)
-             ))
-        )
+        return cov_XIr_XJs_second_order(
+            r=r, s=s, sigma_sq_X=self.sigma_sq_X, sigma_sq_1=self.sigma_sq_1, sigma_sq_2=self.sigma_sq_2, N=self.N)
 
     def add_sample(self, samples: Dict[str, List[float]]) -> None:
         self.samples.append(
