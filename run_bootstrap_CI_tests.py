@@ -102,4 +102,4 @@ for bootstrap_test_collection in bootstrap_test_collections:
         print_test_collection_result(bootstrap_test_collection)
     except KeyboardInterrupt:
         print("{}: Skipped.".format(bootstrap_test_collection[0].test_name()))
-    save_test_collection(bootstrap_test_collection, in_dir="./output")
+    save_test_collection(bootstrap_test_collection, in_dir="./output/")

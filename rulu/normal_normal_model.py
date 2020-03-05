@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import rankdata, norm, betabinom
+from scipy.special import owens_t
 from typing import Dict, List
 
 from rulu.utils import fit_beta_distribution_params
@@ -197,7 +198,7 @@ def var_XIr(r: int, sigma_sq_X: float, sigma_sq_eps: float, N: int, **kwargs):
     return (
         (sigma_sq_eps * sigma_sq_X / (sigma_sq_X + sigma_sq_eps)) +
         sigma_sq_X ** 2 / (sigma_sq_X + sigma_sq_eps) *
-        (r * (N - r + 1)) /  ((N + 1) ** 2 * (N + 2)) /
+        (r * (N - r + 1)) / ((N + 1) ** 2 * (N + 2)) /
         (norm.pdf(norm.ppf(r / (N + 1)))) ** 2
     )
 
@@ -256,19 +257,66 @@ def cov_Yr_Zs_second_order(
     )
 
 
+def _E_ZStar(r: int, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, **kwargs):
+    return(
+        sigma_sq_X / np.sqrt(sigma_sq_X + sigma_sq_1) / np.sqrt(sigma_sq_X + sigma_sq_2) *
+        norm.ppf((r - ALPHA_BLOM) / (N - 2 * ALPHA_BLOM + 1))
+    )
+
+
+def _var_ZStar(r: int, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, **kwargs):
+    return(
+        (var_XIr(r=r, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_1, N=N, **kwargs) + sigma_sq_2) /
+        (sigma_sq_X + sigma_sq_2)
+    )
+
+
 def _E_P_ZN_ZIr(r: int, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, **kwargs):
     return(
-        norm.cdf(sigma_sq_X / np.sqrt(sigma_sq_X + sigma_sq_1) / np.sqrt(sigma_sq_X + sigma_sq_2) *
-                 norm.ppf((r - ALPHA_BLOM) / (N - 2 * ALPHA_BLOM + 1)))
+        norm.cdf(_E_ZStar(r=r, sigma_sq_X=sigma_sq_X, sigma_sq_1=sigma_sq_1, sigma_sq_2=sigma_sq_2, N=N, **kwargs) /
+                 np.sqrt(1 + _var_ZStar(r=r, sigma_sq_X=sigma_sq_X, sigma_sq_1=sigma_sq_1,
+                                        sigma_sq_2=sigma_sq_2, N=N, **kwargs)))
     )
 
 
 def _var_P_ZN_ZIr(r: int, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, **kwargs):
+    E_P = _E_P_ZN_ZIr(r=r, sigma_sq_X=sigma_sq_X, sigma_sq_1=sigma_sq_1, sigma_sq_2=sigma_sq_2, N=N, ** kwargs)
+    E_ZStar = _E_ZStar(r=r, sigma_sq_X=sigma_sq_X, sigma_sq_1=sigma_sq_1, sigma_sq_2=sigma_sq_2, N=N, **kwargs)
+    var_ZStar = _var_ZStar(r=r, sigma_sq_X=sigma_sq_X, sigma_sq_1=sigma_sq_1, sigma_sq_2=sigma_sq_2, N=N, **kwargs)
     return(
-        (var_XIr(r=r, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_1, N=N, **kwargs) + sigma_sq_2) *
-        norm.pdf(sigma_sq_X / np.sqrt(sigma_sq_X + sigma_sq_1) / np.sqrt(sigma_sq_X + sigma_sq_2) *
-                 norm.ppf((r - ALPHA_BLOM) / (N - 2 * ALPHA_BLOM + 1))) ** 2 /
-        (sigma_sq_X + sigma_sq_2)
+        E_P * (1 - E_P) -
+        2 * owens_t(E_ZStar / np.sqrt(1 + var_ZStar), 1 / np.sqrt(1 + 2 * var_ZStar))
+    )
+
+# def _E_P_ZN_ZIr(r: int, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, **kwargs):
+#     return(
+#         norm.cdf(sigma_sq_X / np.sqrt(sigma_sq_X + sigma_sq_1) / np.sqrt(sigma_sq_X + sigma_sq_2) *
+#                  norm.ppf((r - ALPHA_BLOM) / (N - 2 * ALPHA_BLOM + 1)))
+#     )
+
+
+# def _var_P_ZN_ZIr(r: int, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, **kwargs):
+#     return(
+#         (var_XIr(r=r, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_1, N=N, **kwargs) + sigma_sq_2) *
+#         norm.pdf(sigma_sq_X / np.sqrt(sigma_sq_X + sigma_sq_1) / np.sqrt(sigma_sq_X + sigma_sq_2) *
+#                  norm.ppf((r - ALPHA_BLOM) / (N - 2 * ALPHA_BLOM + 1))) ** 2 /
+#         (sigma_sq_X + sigma_sq_2)
+#     )
+
+
+def _var_XIr_XJs(r: int, s: int, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, **kwargs):
+    return (
+        sigma_sq_X * sigma_sq_1 * sigma_sq_2 /
+        (sigma_sq_X * sigma_sq_1 + sigma_sq_X * sigma_sq_2 + sigma_sq_1 * sigma_sq_2) +
+
+        (sigma_sq_X * sigma_sq_1 /
+         (sigma_sq_X * sigma_sq_1 + sigma_sq_X * sigma_sq_2 + sigma_sq_1 * sigma_sq_2)) ** 2 *
+        s * (N - s + 1) / (N + 1) ** 2 / (N + 2) *
+        (sigma_sq_X + sigma_sq_2) / norm.pdf(norm.ppf(s / (N+1))) ** 2 +
+
+        sigma_sq_X ** 2 / (sigma_sq_X + sigma_sq_1) *
+        r * (N - r + 1) / (N + 1) ** 2 / (N + 2) /
+        norm.pdf(norm.ppf(r / (N+1))) ** 2
     )
 
 
@@ -280,8 +328,7 @@ def cov_XIr_XJs(r: int, s: int, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2
     prob_Ir_eq_Js = betabinom.pmf(s-1, N-1, alpha, beta)
     return(
         prob_Ir_eq_Js *
-        sigma_sq_X * sigma_sq_1 * sigma_sq_2 /
-        (sigma_sq_X * sigma_sq_1 + sigma_sq_X * sigma_sq_2 + sigma_sq_1 * sigma_sq_2) +
+        _var_XIr_XJs(r=r, s=s, sigma_sq_X=sigma_sq_X, sigma_sq_1=sigma_sq_1, sigma_sq_2=sigma_sq_2, N=N, **kwargs) +
 
         (1 - prob_Ir_eq_Js) *
         sigma_sq_X ** 2 / (sigma_sq_X + sigma_sq_1) / (sigma_sq_X + sigma_sq_2) *
@@ -299,8 +346,7 @@ def cov_XIr_XJs_second_order(
 
     return (
         prob_Ir_eq_Js *
-        sigma_sq_X * sigma_sq_1 * sigma_sq_2 /
-        (sigma_sq_X * sigma_sq_1 + sigma_sq_X * sigma_sq_2 + sigma_sq_1 * sigma_sq_2) +
+        _var_XIr_XJs(r=r, s=s, sigma_sq_X=sigma_sq_X, sigma_sq_1=sigma_sq_1, sigma_sq_2=sigma_sq_2, N=N, **kwargs) +
 
         (1 - prob_Ir_eq_Js) *
         sigma_sq_X ** 2 / (sigma_sq_X + sigma_sq_1) / (sigma_sq_X + sigma_sq_2) *
@@ -308,3 +354,11 @@ def cov_XIr_XJs_second_order(
             r=r, s=s, sigma_sq_X=sigma_sq_X, sigma_sq_1=sigma_sq_1, sigma_sq_2=sigma_sq_2, N=N, **kwargs)
     )
 
+
+def cov_V1_V2(sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, M: int, **kwargs):
+    acc = 0
+    for r in range(N - M + 1, N + 1):
+        for s in range(N - M + 1, N + 1):
+            acc += cov_XIr_XJs(r=r, s=s, sigma_sq_X=sigma_sq_X, sigma_sq_1=sigma_sq_1, sigma_sq_2=sigma_sq_2, N=N)
+
+    return acc / M ** 2
