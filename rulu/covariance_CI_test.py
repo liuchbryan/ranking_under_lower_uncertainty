@@ -5,7 +5,7 @@ from scipy.stats import norm, percentileofscore
 import pickle
 import time
 
-from rulu.normal_normal_model import cov_Yr_Zs, cov_XIr_XJs, cov_Yr_Zs_second_order, cov_XIr_XJs_second_order
+from rulu.normal_normal_model import cov_Yr_Zs, cov_XIr_XJs, cov_Yr_Zs_second_order, cov_XIr_XJs_second_order, cov_V1_V2
 
 
 class CovarianceCITest(ABC):
@@ -328,27 +328,9 @@ class CovV1V2CITest(CovarianceCITest):
         if self.theoretical_quantity_cache is not None:
             return self.theoretical_quantity_cache
 
-        acc = 0.0
-        for r in range(self.N - self.M + 1, self.N + 1):
-            acc += r * (self.N - r + 1) / norm.pdf(norm.ppf(r / (self.N + 1))) ** 2
-            for s in range(r + 1, self.N + 1):
-                acc += (2.0 * r * (self.N - s + 1) /
-                        norm.pdf(norm.ppf(r / (self.N + 1))) /
-                        norm.pdf(norm.ppf(s / (self.N + 1))))
-
-        acc *= ((self.N - 1) / self.N / self.M ** 2 *
-                self.sigma_sq_X ** 2 /
-                (self.sigma_sq_X + self.sigma_sq_1) ** 1.5 /
-                (self.sigma_sq_X + self.sigma_sq_2) ** 1.5 /
-                (self.N + 1) ** 2 / (self.N + 2))
-
-        acc += (1.0 / self.N *
-                (self.sigma_sq_X * self.sigma_sq_1 * self.sigma_sq_2) /
-                (self.sigma_sq_X * self.sigma_sq_1 +
-                self.sigma_sq_X * self.sigma_sq_2 +
-                self.sigma_sq_1 * self.sigma_sq_2))
-
-        self.theoretical_quantity_cache = acc
+        theoretical_quantity = cov_V1_V2(sigma_sq_X=self.sigma_sq_X, sigma_sq_1=self.sigma_sq_1,
+                                         sigma_sq_2=self.sigma_sq_2, N=self.N, M=self.M)
+        self.theoretical_quantity_cache = theoretical_quantity
         return acc
 
     def add_sample(self, samples: Dict[str, List[float]]) -> None:

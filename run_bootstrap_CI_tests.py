@@ -18,11 +18,15 @@ args = parser.parse_args()
 BOOTSTRAP_BATCH_SIZE = 100
 
 # Prepare test collections
+E_V_tests = []
+E_D_tests = []
 var_V_tests = []
 cov_V1_V2_tests = []
 var_D_tests = []
 
 bootstrap_test_collections = [
+    E_V_tests,
+    E_D_tests,
     var_V_tests,
     cov_V1_V2_tests,
     var_D_tests
@@ -43,15 +47,20 @@ for num_test in range(0, args.num_tests):
         s = params['s']
 
         # Prepare a test
+        E_V_test = EVCITest(mu_X=mu_X, sigma_sq_X=sigma_sq_X, sigma_sq_1=sigma_sq_1, N=N, M=M)
+        E_D_test = EDCITest(mu_X=mu_X, sigma_sq_X=sigma_sq_X, sigma_sq_1=sigma_sq_1, sigma_sq_2=sigma_sq_2, N=N, M=M)
         var_V_test = VarVCITest(sigma_sq_X, N, M, sigma_sq_1=sigma_sq_1)
         cov_V1_V2_test = CovV1V2CITest(sigma_sq_X, sigma_sq_1, sigma_sq_2, N, M)
         var_D_test = VarDCITest(sigma_sq_X, sigma_sq_1, sigma_sq_2, N, M)
 
         # Arrange the covariance tests IN THE SAME ORDER as that in the collections
-        bootstrap_tests = [var_V_test,
-                           cov_V1_V2_test,
-                           var_D_test
-                           ]
+        bootstrap_tests = [
+            E_V_test,
+            E_D_test,
+            var_V_test,
+            cov_V1_V2_test,
+            var_D_test
+        ]
 
         # Get the initial samples
         print("Test {}/{} (N={}, M={}): calculating initial samples...    "

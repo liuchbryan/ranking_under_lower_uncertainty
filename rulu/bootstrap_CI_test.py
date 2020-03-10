@@ -6,7 +6,7 @@ import time
 import numpy as np
 from scipy.stats import percentileofscore, norm
 
-from rulu.normal_normal_model import var_XIr, cov_XIr_XIs, cov_V1_V2
+from rulu.normal_normal_model import E_V, E_D, var_XIr, cov_XIr_XIs, cov_V1_V2, var_V
 
 
 class BootstrapCITest(ABC):
@@ -67,6 +67,86 @@ class BootstrapCITest(ABC):
         return percentileofscore(self.bootstrap_samples, self.theoretical_quantity())
 
 
+class EVCITest(BootstrapCITest):
+    def __init__(self, mu_X: float = 0, sigma_sq_X: float = 1**2, N: int = 100, M: int =25, **kwargs):
+        super(EVCITest, self).__init__()
+        self.mu_X = mu_X
+        self.sigma_sq_X = sigma_sq_X
+        self.N = N
+        self.M = M
+        self.sigma_sq_1 = None
+        self.sigma_sq_2 = None
+
+        if not (('sigma_sq_1' in kwargs) ^ ('sigma_sq_2' in kwargs)):
+            raise TypeError("Precisely one of sigma_sq_1 / sigma_sq_2 is required.")
+        elif 'sigma_sq_1' in kwargs:
+            self.sigma_sq_1 = kwargs['sigma_sq_1']
+        elif 'sigma_sq_2' in kwargs:
+            self.sigma_sq_2 = kwargs['sigma_sq_2']
+        assert (self.sigma_sq_1 is None) ^ (self.sigma_sq_2 is None)
+
+    def set_initial_samples(self, samples: Dict[str, List[float]]) -> None:
+        if self.sigma_sq_1 is not None:
+            self.initial_samples = samples['noisy_mean']
+        else:
+            self.initial_samples = samples['clean_mean']
+
+    def generate_bootstrap_samples(self, num_bootstrap_samples: int) -> None:
+        if self.initial_samples is None or len(self.initial_samples) == 0:
+            _print_nothing_in_initial_sample(self.test_name())
+            return
+
+        for i in range(0, num_bootstrap_samples):
+            self.bootstrap_samples.append(
+                np.mean(np.random.choice(self.initial_samples, len(self.initial_samples), replace=True))
+            )
+
+    def test_name(self) -> str:
+        return "E(V)"
+
+    def theoretical_quantity(self) -> float:
+        if self.sigma_sq_1 is not None:
+            sigma_sq_eps = self.sigma_sq_1
+        else:
+            sigma_sq_eps = self.sigma_sq_2
+
+        return E_V(mu_X=self.mu_X, sigma_sq_X=self.sigma_sq_X, sigma_sq_eps=sigma_sq_eps, N=self.N, M=self.M)
+
+
+
+class EDCITest(BootstrapCITest):
+    def __init__(self, mu_X: float = 0, sigma_sq_X: float = 1**2, sigma_sq_1: float = 0.5**2,
+                 sigma_sq_2: float = 0.4 ** 2, N: int = 100, M: int =25, **kwargs):
+        super(EDCITest, self).__init__()
+        self.mu_X = mu_X
+        self.sigma_sq_X = sigma_sq_X
+        self.sigma_sq_1 = sigma_sq_1
+        self.sigma_sq_2 = sigma_sq_2
+        self.N = N
+        self.M = M
+
+    def set_initial_samples(self, samples: Dict[str, List[float]]) -> None:
+        self.initial_samples = samples['improvement']
+
+    def generate_bootstrap_samples(self, num_bootstrap_samples: int) -> None:
+        if self.initial_samples is None or len(self.initial_samples) == 0:
+            _print_nothing_in_initial_sample(self.test_name())
+            return
+
+        for i in range(0, num_bootstrap_samples):
+            self.bootstrap_samples.append(
+                np.mean(np.random.choice(self.initial_samples, len(self.initial_samples), replace=True))
+            )
+
+    def test_name(self) -> str:
+        return "E(D)"
+
+    def theoretical_quantity(self) -> float:
+        return E_D(mu_X=self.mu_X, sigma_sq_X=self.sigma_sq_X, sigma_sq_1=self.sigma_sq_1,
+                   sigma_sq_2=self.sigma_sq_2, N=self.N, M=self.M)
+
+
+
 class VarVCITest(BootstrapCITest):
     def __init__(self, sigma_sq_X: float = 1, N: int = 100, M: int = 25, **kwargs):
         super(VarVCITest, self).__init__()
@@ -114,16 +194,10 @@ class VarVCITest(BootstrapCITest):
         else:
             sigma_sq_eps = self.sigma_sq_2
 
-        acc = 0.0
-        for r in range(self.N - self.M + 1, self.N + 1):
-            acc += var_XIr(r, self.sigma_sq_X, sigma_sq_eps, self.N)
-            for s in range(r + 1, self.N + 1):
-                acc += 2.0 * cov_XIr_XIs(r, s, self.sigma_sq_X, sigma_sq_eps, self.N)
+        theoretical_quantity = var_V(sigma_sq_X=self.sigma_sq_X, sigma_sq_eps=sigma_sq_eps, N=self.N, M=self.M)
 
-        acc = acc / (self.M ** 2)
-
-        self.theoretical_quantity_cache = acc
-        return acc
+        self.theoretical_quantity_cache = theoretical_quantity
+        return theoretical_quantity
 
 
 class CovV1V2CITest(BootstrapCITest):

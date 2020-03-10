@@ -161,7 +161,7 @@ def get_samples(
     return result
 
 
-# Y_(r) / Z_(s)
+# E(Y_(r)) / E(Z_(s))
 def E_Yr():
     pass
 
@@ -170,15 +170,7 @@ def E_Zs():
     pass
 
 
-def var_Yr(r: int, sigma_sq_X:float, sigma_sq_eps: float, N:int, **kwargs):
-    pass
-
-
-def var_Zs(s: int, sigma_sq_X: float, sigma_sq_2: float, N: int, **kwargs):
-    return var_Yr(r=s, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_2, N=N, **kwargs)
-
-
-# X_I(r) / X_J(s)
+# E(X_I(r)) / E(X_J(s))
 def E_XIr(r: int, mu_X: float, sigma_sq_X: float, sigma_sq_eps: float, N: int, **kwargs):
     return (
         mu_X +
@@ -194,6 +186,32 @@ def E_XJs(s: int, mu_X: float, sigma_sq_X: float, sigma_sq_2: float, N: int, **k
     return E_XIr(r=s, mu_X=mu_X, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_2, N=N, **kwargs)
 
 
+# E(V)
+def E_V(mu_X: float, sigma_sq_X: float, sigma_sq_eps: float, N: int, M: int, **kwargs):
+    acc = 0
+    for r in range(N-M+1, N+1):
+        acc += E_XIr(r=r, mu_X=mu_X, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_eps, N=N, **kwargs)
+    return acc / M
+
+
+# E(D)
+def E_D(mu_X: float, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, M: int, **kwargs):
+    return(
+        E_V(mu_X=mu_X, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_2, N=N, M=M, **kwargs) -
+        E_V(mu_X=mu_X, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_1, N=N, M=M, **kwargs)
+    )
+
+
+# Var(Y_(r)) / Var(Z_(s))
+def var_Yr(r: int, sigma_sq_X:float, sigma_sq_eps: float, N:int, **kwargs):
+    pass
+
+
+def var_Zs(s: int, sigma_sq_X: float, sigma_sq_2: float, N: int, **kwargs):
+    return var_Yr(r=s, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_2, N=N, **kwargs)
+
+
+# Var(X_I(r)) / Var(X_J(s))
 def var_XIr(r: int, sigma_sq_X: float, sigma_sq_eps: float, N: int, **kwargs):
     return (
         (sigma_sq_eps * sigma_sq_X / (sigma_sq_X + sigma_sq_eps)) +
@@ -207,6 +225,7 @@ def var_XJs(s: int, sigma_sq_X: float, sigma_sq_2: float, N: int, **kwargs):
     return var_XIr(r=s, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_2, N=N, **kwargs)
 
 
+# Var(V1) / Var(V2)
 def cov_XIr_XIs(r: int, s: int, sigma_sq_X: float, sigma_sq_eps: float, N: int, **kwargs):
     if r == s:
         return var_XIr(r, sigma_sq_X, sigma_sq_eps, N, **kwargs)
@@ -225,7 +244,17 @@ def cov_XIr_XIs(r: int, s: int, sigma_sq_X: float, sigma_sq_eps: float, N: int, 
     )
 
 
-# D
+def var_V(sigma_sq_X: float, sigma_sq_eps: float, N: int, M: int, **kwargs):
+    acc = 0.0
+    for r in range(N - M + 1, N + 1):
+        acc += var_XIr(r=r, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_eps, N=N)
+        for s in range(r + 1, N + 1):
+            acc += 2.0 * cov_XIr_XIs(r=r, s=s, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_eps, N=N)
+
+    return acc / (M ** 2)
+
+
+# var(D)
 def cov_Yr_Zs(r: int, s:int, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, **kwargs):
     return(
         sigma_sq_X ** 2 / np.sqrt(sigma_sq_X + sigma_sq_1) / np.sqrt(sigma_sq_X + sigma_sq_2) *
@@ -288,21 +317,6 @@ def _var_P_ZN_ZIr(r: int, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: floa
         2 * owens_t(E_ZStar / np.sqrt(1 + var_ZStar), 1 / np.sqrt(1 + 2 * var_ZStar))
     )
 
-# def _E_P_ZN_ZIr(r: int, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, **kwargs):
-#     return(
-#         norm.cdf(sigma_sq_X / np.sqrt(sigma_sq_X + sigma_sq_1) / np.sqrt(sigma_sq_X + sigma_sq_2) *
-#                  norm.ppf((r - ALPHA_BLOM) / (N - 2 * ALPHA_BLOM + 1)))
-#     )
-
-
-# def _var_P_ZN_ZIr(r: int, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, **kwargs):
-#     return(
-#         (var_XIr(r=r, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_1, N=N, **kwargs) + sigma_sq_2) *
-#         norm.pdf(sigma_sq_X / np.sqrt(sigma_sq_X + sigma_sq_1) / np.sqrt(sigma_sq_X + sigma_sq_2) *
-#                  norm.ppf((r - ALPHA_BLOM) / (N - 2 * ALPHA_BLOM + 1))) ** 2 /
-#         (sigma_sq_X + sigma_sq_2)
-#     )
-
 
 def _var_XIr_XJs(r: int, s: int, sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, **kwargs):
     return (
@@ -362,3 +376,7 @@ def cov_V1_V2(sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, M
             acc += cov_XIr_XJs(r=r, s=s, sigma_sq_X=sigma_sq_X, sigma_sq_1=sigma_sq_1, sigma_sq_2=sigma_sq_2, N=N)
 
     return acc / M ** 2
+
+
+def var_D():
+    pass
