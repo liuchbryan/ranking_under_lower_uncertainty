@@ -21,15 +21,15 @@ BOOTSTRAP_BATCH_SIZE = 100
 E_V_tests = []
 E_D_tests = []
 var_V_tests = []
-cov_V1_V2_tests = []
-var_D_tests = []
+# cov_V1_V2_tests = []
+# var_D_tests = []
 
 bootstrap_test_collections = [
     E_V_tests,
     E_D_tests,
     var_V_tests,
-    cov_V1_V2_tests,
-    var_D_tests
+#    cov_V1_V2_tests,
+#    var_D_tests
 ]
 
 for num_test in range(0, args.num_tests):
@@ -58,8 +58,8 @@ for num_test in range(0, args.num_tests):
             E_V_test,
             E_D_test,
             var_V_test,
-            cov_V1_V2_test,
-            var_D_test
+#            cov_V1_V2_test,
+#            var_D_test
         ]
 
         # Get the initial samples

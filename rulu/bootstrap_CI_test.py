@@ -6,7 +6,7 @@ import time
 import numpy as np
 from scipy.stats import percentileofscore, norm
 
-from rulu.normal_normal_model import E_V, E_D, var_XIr, cov_XIr_XIs, cov_V1_V2, var_V
+from rulu.normal_normal_model import E_V, E_D, var_XIr, cov_XIr_XIs, cov_V1_V2, var_V, var_D
 
 
 class BootstrapCITest(ABC):
@@ -271,7 +271,14 @@ class VarDCITest(BootstrapCITest):
         return "Var(D)"
 
     def theoretical_quantity(self) -> float:
-        return 0
+        if self.theoretical_quantity_cache is not None:
+            return self.theoretical_quantity_cache
+
+        theoretical_quantity = var_D(sigma_sq_X=self.sigma_sq_X, sigma_sq_1=self.sigma_sq_1,
+                                     sigma_sq_2=self.sigma_sq_2, N=self.N, M=self.M)
+
+        self.theoretical_quantity_cache = theoretical_quantity
+        return theoretical_quantity
 
 
 def _print_nothing_in_initial_sample(test_name: str) -> None:
@@ -287,7 +294,7 @@ def print_test_collection_result(test_collection: List[BootstrapCITest]) -> None
     # which will benefit from a progress bar
     within_CI = []
     for index, test in enumerate(test_collection, start=1):
-        print("Calculating theoretical quantity / sample CI for test {}/{}... (N={}, M={})"
+        print("Calculating theoretical quantity / sample CI for test {}/{}... (N={}, M={})      "
               .format(index, len(test_collection), test.N, test.M),
               end="\r")
 

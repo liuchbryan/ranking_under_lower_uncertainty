@@ -56,11 +56,11 @@ def get_samples(
                 propositions['true'] +
                 np.random.normal(mu_epsilon, sigma_1, N))
 
-        # Step 3
+        # Step 2a - ranking
         propositions['observed_noisy_rank'] = (
             rankdata(propositions['observed_noisy']))
 
-        # Step 4
+        # Step 2c
         noisy_chosen_true = (
             propositions[propositions['observed_noisy_rank'] > (N - M)]
             ['true']
@@ -69,6 +69,8 @@ def get_samples(
         noisy_chosen_true_mean = noisy_chosen_true.mean()
         noisy_mean.append(noisy_chosen_true_mean)
 
+        # Step 2a - extract Y_(r) and Step 2b - extract X_I(r)
+        # We also extract Y_(s) and X_I(s) in case we need them to evaluate some other quantities
         if r is not None:
             noisy_rth_observed = (
                 propositions[propositions['observed_noisy_rank'] == r])
@@ -84,16 +86,16 @@ def get_samples(
             noisy_sth_observed_value_true.append(
                 noisy_sth_observed['true'].values[0])
 
-        # Step 5- repeat step 2 for sigma^2_2
+        # Step 3 - repeat step 2 for sigma^2_2
         propositions['observed_clean'] = (
                 propositions['true'] +
                 np.random.normal(mu_epsilon, sigma_2, N))
 
-        # Step 5- repeat 3 for sigma^2_2
+        # Step 3a - repeat 2a for sigma^2_2
         propositions['observed_clean_rank'] = (
             rankdata(propositions['observed_clean']))
 
-        # Step 5- repeat 4 for sigma^2_2
+        # Step 3c - repeat 2c for sigma^2_2
         clean_chosen_true = (
             propositions[propositions['observed_clean_rank'] > (N - M)]
             ['true']
@@ -102,6 +104,8 @@ def get_samples(
         clean_chosen_true_mean = clean_chosen_true.mean()
         clean_mean.append(clean_chosen_true_mean)
 
+        # Step 2a - extract Z_(s) and Step 2b - extract X_J(s)
+        # We also extract Z_(r) and X_J(r) in case we need them to evaluate some other quantities
         if r is not None:
             clean_rth_observed = (
                 propositions[propositions['observed_clean_rank'] == r])
@@ -378,5 +382,9 @@ def cov_V1_V2(sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, M
     return acc / M ** 2
 
 
-def var_D():
-    pass
+def var_D(sigma_sq_X: float, sigma_sq_1: float, sigma_sq_2: float, N: int, M: int, **kwargs):
+    return (
+        var_V(sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_2, N=N, M=M, **kwargs) +
+        var_V(sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_1, N=N, M=M, **kwargs) -
+        2.0 * cov_V1_V2(sigma_sq_X=sigma_sq_X, sigma_sq_1=sigma_sq_1, sigma_sq_2=sigma_sq_2, N=N, M=M, **kwargs))
+

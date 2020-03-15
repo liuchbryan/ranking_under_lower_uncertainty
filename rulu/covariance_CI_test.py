@@ -331,7 +331,7 @@ class CovV1V2CITest(CovarianceCITest):
         theoretical_quantity = cov_V1_V2(sigma_sq_X=self.sigma_sq_X, sigma_sq_1=self.sigma_sq_1,
                                          sigma_sq_2=self.sigma_sq_2, N=self.N, M=self.M)
         self.theoretical_quantity_cache = theoretical_quantity
-        return acc
+        return theoretical_quantity
 
     def add_sample(self, samples: Dict[str, List[float]]) -> None:
         self.samples.append(

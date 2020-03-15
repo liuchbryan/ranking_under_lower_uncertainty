@@ -26,10 +26,10 @@ cov_XIr_XJs_second_order_tests = []
 cov_V1_V2_tests = []
 
 cov_test_collections = [
-    # cov_Yr_Ys_tests, cov_Yr_Ys_second_order_tests,
-    # cov_Yr_Zs_tests, cov_Yr_Zs_second_order_tests,
-    # cov_XIr_XJs_tests, cov_XIr_XJs_second_order_tests,
-    cov_V1_V2_tests
+    cov_Yr_Ys_tests, cov_Yr_Ys_second_order_tests,
+    cov_Yr_Zs_tests, cov_Yr_Zs_second_order_tests,
+    cov_XIr_XJs_tests, cov_XIr_XJs_second_order_tests,
+    # cov_V1_V2_tests
 ]
 
 for num_test in range(0, args.num_tests):
@@ -53,14 +53,14 @@ for num_test in range(0, args.num_tests):
         cov_Yr_Zs_second_order_test = CovYrZsSecondOrderCITest(r, s, sigma_sq_X, sigma_sq_1, sigma_sq_2, N)
         cov_XIr_XJs_test = CovXIrXJsCITest(r, s, sigma_sq_X, sigma_sq_1, sigma_sq_2, N)
         cov_XIr_XJs_second_order_test = CovXIrXJsSecondOrderCITest(r, s, sigma_sq_X, sigma_sq_1, sigma_sq_2, N)
-        cov_V1_V2_test = CovV1V2CITest(sigma_sq_X, sigma_sq_1, sigma_sq_2, N, M)
+        # cov_V1_V2_test = CovV1V2CITest(sigma_sq_X, sigma_sq_1, sigma_sq_2, N, M)
 
         # Arrange the covariance tests IN THE SAME ORDER as that in the collections
         cov_tests = [
-            # cov_Yr_Ys_test, cov_Yr_Ys_second_order_test,
-            # cov_Yr_Zs_test, cov_Yr_Zs_second_order_test,
-            # cov_XIr_XJs_test, cov_XIr_XJs_second_order_test,
-            cov_V1_V2_test
+            cov_Yr_Ys_test, cov_Yr_Ys_second_order_test,
+            cov_Yr_Zs_test, cov_Yr_Zs_second_order_test,
+            cov_XIr_XJs_test, cov_XIr_XJs_second_order_test,
+            # cov_V1_V2_test
         ]
 
         for num_covariate_sample in range(0, args.num_covariate_samples):
