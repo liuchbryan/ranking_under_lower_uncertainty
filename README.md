@@ -1,13 +1,38 @@
 # Ranking Under Lower Uncertainty
 
-## Setup
+The repository contains the code and supplementary documents associated 
+with the paper [What is the value of experimentation and measurement?](https://link.springer.com/article/10.1007%2Fs41019-020-00121-5), 
+which has been published in the Data Science and Engineering Journal. 
+An earlier version of the paper appeared in the [IEEE ICDM 2019 conference](https://ieeexplore.ieee.org/document/8970749), which
+used [a separate codebase](https://github.com/liuchbryan/value_of_experimentation).
+
+If you find the code useful for your work, please consider citing the underlying article
+
+```bibtex
+@article{liu2020valueofexpt,
+    author={Liu, C. H. Bryan and Chamberlain, Benjamin Paul and McCoy, Emma J.},
+    title={What is the Value of Experimentation and Measurement?},
+    journal={Data Science and Engineering},
+    year={2020},
+    month={Jun},
+    day={01},
+    volume={5},
+    number={2},
+    pages={152-167},
+    issn={2364-1541},
+    doi={10.1007/s41019-020-00121-5},
+    url={https://doi.org/10.1007/s41019-020-00121-5}
+}
+```
+
+# Setup
 This file assumes you have access to a *nix-like machine (both MacOS or
 Linux would do).
 
 The projects uses `pyenv` and `pipenv` for package management.
 Before you start, please ensure you have `gcc`, `make`, and `pip` installed.
 
-### Installing `pyenv`
+## Installing `pyenv`
 
 For Linux (together with other required libraries):
 
@@ -38,13 +63,13 @@ eval "$(pyenv virtualenv-init -)"
 pyenv install 3.7.3
 ```
 
-### Installing `pipenv`
+## Installing `pipenv`
 Install pipenv using `pip` (or `pip3`):
 ```
 pip install -U pipenv
 ```
 
-### Download the repository and sync the environment
+## Download the repository and sync the environment
 ```
 git clone https://github.com/anonymous-authors1234/ranking_under_lower_uncertainty.git
 cd ranking_under_lower_uncertainty
