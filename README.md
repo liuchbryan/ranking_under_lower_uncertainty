@@ -71,7 +71,7 @@ pip install -U pipenv
 
 ## Download the repository and sync the environment
 ```
-git clone https://github.com/anonymous-authors1234/ranking_under_lower_uncertainty.git
+git clone https://github.com/liuchbryan/ranking_under_lower_uncertainty.git
 cd ranking_under_lower_uncertainty
 
 # Switch to Python 3.7.3 for pyenv
