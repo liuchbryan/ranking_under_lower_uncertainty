@@ -63,19 +63,10 @@ eval "$(pyenv virtualenv-init -)"
 pyenv install 3.7.3
 ```
 
-<<<<<<< HEAD
-## Installing `pipenv`
-Install pipenv using `pip` (or `pip3`):
-```
-pip install -U pipenv
-```
-=======
 ### Installing `poetry`
 See https://python-poetry.org/docs/#installation for the installation instructions.
 
->>>>>>> Fix #3 and migrated to Poetry
-
-## Download the repository and sync the environment
+### Download the repository and sync the environment
 ```
 git clone https://github.com/liuchbryan/ranking_under_lower_uncertainty.git
 cd ranking_under_lower_uncertainty
@@ -86,7 +77,7 @@ pyenv local 3.7.3
 poetry install
 ```
 
-### Run the Jupyter notebooks
+### Run the Jupyter notebooks  
 ```
 poetry shell
 ```
