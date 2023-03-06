@@ -37,12 +37,12 @@ Before you start, please ensure you have `gcc`, `make`, and `pip` installed.
 For Linux (together with other required libraries):
 
 ``` bash
-sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
+sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
 libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
-xz-utils tk-dev libffi-dev liblzma-dev python-openssl git
-wget -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+xz-utils tk-dev libffi-dev liblzma-dev python3-openssl git
+wget -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
 
-chmod u+x pyenv-installer
+chmod u+x pyenv-installer
 ./pyenv-installer
 ```
 
@@ -72,8 +72,9 @@ git clone https://github.com/liuchbryan/ranking_under_lower_uncertainty.git
 cd ranking_under_lower_uncertainty
 
 
-# Switch to Python 3.7.3 for pyenv
-pyenv local 3.7.3
+# Switch to Python 3.9.10 for pyenv
+pyenv local 3.9.10
+poetry env use ~/.pyenv/versions/3.9.10/bin/python
 poetry install
 ```
 

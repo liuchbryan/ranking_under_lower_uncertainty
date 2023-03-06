@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "ranking_under_lower_uncertainty"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["Bryan Liu <liu.chbn@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.7.1"
+python = "^3.9"
 pytest = "*"
 
 [tool.poetry.dev-dependencies]
