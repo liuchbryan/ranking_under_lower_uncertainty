@@ -60,7 +60,7 @@ eval "$(pyenv virtualenv-init -)"
 
 ...and install the right Python version for our environment:
 ```
-pyenv install 3.7.3
+pyenv install 3.9.10
 ```
 
 ### Installing `poetry`
