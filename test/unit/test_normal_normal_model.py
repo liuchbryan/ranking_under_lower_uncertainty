@@ -1,6 +1,8 @@
+import numpy as np
 import pytest
-from rulu.normal_normal_model import get_samples, _var_XIr_XJs, var_XIr
+from rulu.normal_normal_model import get_samples, _var_XIr_XJs, var_XIr, F_Zn, f_Zn
 from scipy.stats import norm
+
 
 class TestGetSamples:
     def test_have_required_list_headers(self):
@@ -103,3 +105,43 @@ class TestVarXIr:
         expected_value = (4 * 5 / (4 + 5) + 5 ** 2 / (4 + 5) * 1 * 10 / 11 ** 2 / 12 /
                           norm.pdf(norm.ppf(1 / 11)) ** 2)
         assert var_XIr(r=r, sigma_sq_X=sigma_sq_X, sigma_sq_eps=sigma_sq_eps, N=N) == expected_value
+
+
+class TestFZn:
+    def test_returns_half_at_mean(self):
+        mu_X = 0.123        # Exact value does not matter
+        mu_eps = 0.234      # Exact value does not matter
+        sigma_sq_X = 1
+        sigma_sq_2 = 3
+
+        # CDF = 0.5 at mean
+        assert F_Zn(mu_X + mu_eps, mu_X=mu_X, mu_eps=mu_eps, sigma_sq_X=sigma_sq_X, sigma_sq_2=sigma_sq_2) == 0.5
+
+    def test_returns_zero_at_neg_inf(self):
+        mu_X = 0.123  # Exact value does not matter
+        mu_eps = 0.234  # Exact value does not matter
+        sigma_sq_X = 1
+        sigma_sq_2 = 3
+
+        assert F_Zn(-np.inf, mu_X=mu_X, mu_eps=mu_eps, sigma_sq_X=sigma_sq_X, sigma_sq_2=sigma_sq_2) == 0.0
+
+    def test_returns_one_at_pos_inf(self):
+        mu_X = 0.123  # Exact value does not matter
+        mu_eps = 0.234  # Exact value does not matter
+        sigma_sq_X = 1
+        sigma_sq_2 = 3
+
+        assert F_Zn(np.inf, mu_X=mu_X, mu_eps=mu_eps, sigma_sq_X=sigma_sq_X, sigma_sq_2=sigma_sq_2) == 1.0
+
+
+class TestfZn:
+    def test_returns_expected_value(self):
+        mu_X = 1  # Exact value does not matter
+        mu_eps = 2  # Exact value does not matter
+        sigma_sq_X = 3
+        sigma_sq_2 = 4
+
+        assert(
+            f_Zn(0.123, mu_X=mu_X, mu_eps=mu_eps, sigma_sq_X=sigma_sq_X, sigma_sq_2=sigma_sq_2) ==
+            norm.pdf(0.123, loc=mu_X + mu_eps, scale=np.sqrt(sigma_sq_X + sigma_sq_2))
+        )
