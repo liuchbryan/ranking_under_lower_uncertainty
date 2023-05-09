@@ -29,7 +29,7 @@ If you find the code useful for your work, please consider citing the underlying
 This file assumes you have access to a *nix-like machine (both MacOS or
 Linux would do).
 
-The projects uses `pyenv` and `pipenv` for package management.
+The projects uses `pyenv` and `poetry` for package management.
 Before you start, please ensure you have `gcc`, `make`, and `pip` installed.
 
 ## Installing `pyenv`
